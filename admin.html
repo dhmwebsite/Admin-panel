@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DHM Hub - Central Admin Panel v2</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #030408; color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        .glass-panel { background: rgba(12, 14, 28, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        input, select, textarea { background-color: #06070e !important; border: 1px solid rgba(255, 255, 255, 0.06) !important; color: #fff !important; transition: all 0.2s ease; }
+        input:focus, select:focus, textarea:focus { border-color: #a855f7 !important; outline: none !important; box-shadow: 0 0 10px rgba(168, 85, 247, 0.15); }
+        
+        /* Custom Radio/Checkbox Premium */
+        .badge-card { cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.04); background: #06070e; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .badge-card input { display: none !important; }
+        
+        .badge-card:has(input:checked).b-hot { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
+        .badge-card:has(input:checked).b-updated { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); box-shadow: 0 0 12px rgba(34, 197, 94, 0.2); }
+        .badge-card:has(input:checked).b-recom { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); box-shadow: 0 0 12px rgba(59, 130, 246, 0.2); }
+        .badge-card:has(input:checked).b-nokey { border-color: #ec4899; background: rgba(236, 72, 153, 0.1); box-shadow: 0 0 12px rgba(236, 72, 153, 0.2); }
+        .badge-card:has(input:checked).b-keyless { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); box-shadow: 0 0 12px rgba(245, 158, 11, 0.2); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen p-4 pb-24">
+
+    <div class="max-w-md mx-auto glass-panel rounded-2xl p-4 flex justify-between items-center mb-4 border border-purple-500/10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-950/40 flex items-center justify-center border border-purple-500/20 text-purple-400 text-lg shadow-inner"><i class="fa-solid fa-shield-halved"></i></div>
+            <div>
+                <h1 class="font-black text-xs tracking-widest text-white uppercase">DHM SYSTEM CONTROL</h1>
+            </div>
+        </div>
+        <button onclick="window.location.href='index.html'" class="bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 text-[11px] font-black px-3 py-2 rounded-xl transition-all">LIHAT WEB</button>
+    </div>
+
+    <div class="max-w-md mx-auto grid grid-cols-4 gap-2 mb-4">
+        <div class="glass-panel p-2.5 rounded-xl text-center">
+            <p class="text-[8px] font-black text-gray-500 uppercase tracking-wider">Scripts</p>
+            <p id="dash-scripts" class="text-xs font-black text-white mt-0.5">0</p>
+        </div>
+        <div class="glass-panel p-2.5 rounded-xl text-center">
+            <p class="text-[8px] font-black text-gray-500 uppercase tracking-wider">Executors</p>
+            <p id="dash-execs" class="text-xs font-black text-white mt-0.5">0</p>
+        </div>
+        <div class="glass-panel p-2.5 rounded-xl text-center border-amber-500/10">
+            <p class="text-[8px] font-black text-amber-400 uppercase tracking-wider">Requests</p>
+            <p id="dash-reqs" class="text-xs font-black text-amber-400 mt-0.5">0</p>
+        </div>
+        <div class="glass-panel p-2.5 rounded-xl text-center border-red-500/10">
+            <p class="text-[8px] font-black text-red-400 uppercase tracking-wider">Reports</p>
+            <p id="dash-reports" class="text-xs font-black text-red-400 mt-0.5">0</p>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto space-y-4">
+
+        <div class="glass-panel p-4 rounded-2xl space-y-3 border border-amber-500/10">
+            <h2 class="text-[11px] font-black text-amber-400 tracking-wider uppercase flex items-center gap-1.5"><i class="fa-solid fa-paper-plane"></i> Kotak Masuk Request Game</h2>
+            <div id="admin-request-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <p class="text-[11px] text-gray-600 font-bold uppercase text-center py-4">Tidak ada request masuk</p>
+            </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl space-y-3 border border-red-500/10">
+            <h2 class="text-[11px] font-black text-red-400 tracking-wider uppercase flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Laporan Script Bermasalah (Bug)</h2>
+            <div id="admin-report-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <p class="text-[11px] text-gray-600 font-bold uppercase text-center py-4">Sistem aman, tidak ada laporan</p>
+            </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl space-y-3.5">
+            <h2 class="text-[11px] font-black text-blue-400 tracking-wider uppercase flex items-center gap-1.5"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Script Baru</h2>
+            <div class="space-y-2.5 text-sm">
+                <input type="text" id="script-name" placeholder="Nama Script Hub" class="w-full p-3 rounded-xl text-xs font-semibold">
+                <input type="text" id="sub-features" placeholder="Fitur Pokok Script (Contoh: Auto Farm, Teleport)" class="w-full p-3 rounded-xl text-xs font-semibold">
+                
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-wide">Pilih Kategori Game:</label>
+                    <select id="script-category-select" class="w-full p-3 rounded-xl text-xs font-bold"></select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-wider block mb-1">Aktifkan Badge Untuk Script Ini:</label>
+                    <div class="grid grid-cols-2 gap-2 text-[11px] font-bold">
+                        <label class="badge-card b-hot flex items-center gap-2 p-2.5 rounded-xl border">
+                            <input type="checkbox" value="HOT" class="badge-cb"> 
+                            <span class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]"></span> <span class="text-gray-300">HOT</span>
+                        </label>
+                        <label class="badge-card b-updated flex items-center gap-2 p-2.5 rounded-xl border">
+                            <input type="checkbox" value="UPDATED" class="badge-cb"> 
+                            <span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_#22c55e]"></span> <span class="text-gray-300">UPDATED</span>
+                        </label>
+                        <label class="badge-card b-recom flex items-center gap-2 p-2.5 rounded-xl border">
+                            <input type="checkbox" value="RECOMMENDED" class="badge-cb"> 
+                            <span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_#3b82f6]"></span> <span class="text-gray-300">RECOMMENDED</span>
+                        </label>
+                        <label class="badge-card b-nokey flex items-center gap-2 p-2.5 rounded-xl border">
+                            <input type="checkbox" value="NO KEY" class="badge-cb"> 
+                            <span class="w-2 h-2 rounded-full bg-pink-500 shadow-[0_0_6px_#ec4899]"></span> <span class="text-gray-300">NO KEY</span>
+                        </label>
+                        <label class="badge-card b-keyless flex items-center gap-2 p-2.5 rounded-xl border col-span-2 justify-center">
+                            <input type="checkbox" value="KEYLESS" class="badge-cb"> 
+                            <span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]"></span> <span class="text-gray-300">KEYLESS</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-wide">Pilih Gambar Cover File (Opsional):</label>
+                    <input type="file" id="cover-file" accept="image/*" class="w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-950 file:text-purple-400 bg-[#06070e] p-2 rounded-xl border border-white/5 cursor-pointer">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-wide">Taruh teks code script loadstring di sini:</label>
+                    <textarea id="lua-code" rows="4" placeholder="Taruh kode loadstring Lua disini..." class="w-full p-3 rounded-xl font-mono text-xs text-green-400"></textarea>
+                </div>
+
+                <button onclick="publishScript()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black py-3.5 rounded-xl text-xs uppercase tracking-widest shadow-xl active:scale-98 transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> PUBLISH KE DEVICE USER</button>
+            </div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl space-y-3">
+            <h2 class="text-[11px] font-black text-green-400 tracking-wider uppercase flex items-center gap-1.5"><i class="fa-solid fa-terminal"></i> Tambah Executor Hub</h2>
+            <div class="space-y-2.5 text-sm">
+                <input type="text" id="exec-name" placeholder="Nama Injector (Contoh: Delta Mobile)" class="w-full p-3 rounded-xl text-xs font-semibold">
+                <input type="text" id="exec-link" placeholder="Tautan Tautan Unduhan Direct" class="w-full p-3 rounded-xl text-xs font-semibold">
+                <div class="flex gap-2">
+                    <select id="exec-status" class="flex-1 p-3 rounded-xl text-xs font-black">
+                        <option value="Undetected">🟢 UNDETECTED</option>
+                        <option value="Detected">🔴 DETECTED</option>
+                    </select>
+                    <button onclick="addExecutor()" class="bg-green-600 hover:bg-green-700 text-white font-black px-5 rounded-xl text-xs uppercase tracking-wider transition-all">POST</button>
+                </div>
+            </div>
+            <div id="admin-exec-list" class="space-y-1.5 pt-1 max-h-40 overflow-y-auto pr-1"></div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl space-y-3">
+            <h2 class="text-[11px] font-black text-purple-400 tracking-wider uppercase flex items-center gap-1.5"><i class="fa-solid fa-folder-tree"></i> Atur Kategori Game</h2>
+            <div class="flex gap-2">
+                <input type="text" id="new-category" placeholder="Ketik nama game baru..." class="flex-1 p-3 rounded-xl text-xs font-semibold">
+                <button onclick="addCategory()" class="bg-purple-600 hover:bg-purple-700 text-white font-black px-4 rounded-xl text-xs uppercase tracking-wider transition-all">SIMPAN</button>
+            </div>
+            <div id="admin-category-list" class="space-y-1.5 max-h-40 overflow-y-auto pr-1"></div>
+        </div>
+
+        <div class="glass-panel p-4 rounded-2xl space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="text-[11px] font-black text-red-400 tracking-wider uppercase flex items-center gap-1.5"><i class="fa-solid fa-dumpster-fire"></i> Hapus Postingan Script</h2>
+                <input type="text" id="admin-search-script" placeholder="Cari postingan..." class="w-32 p-1.5 rounded-lg text-[10px] bg-black">
+            </div>
+            <div id="admin-script-list" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://dhm-store-default-rtdb.firebaseio.com/" };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let allScriptsCache = {};
+
+        database.ref('scripts').on('value', (s) => {
+            allScriptsCache = s.val() || {};
+            document.getElementById('dash-scripts').innerText = Object.keys(allScriptsCache).length;
+            renderAdminScripts();
+        });
+        database.ref('executors').on('value', (s) => {
+            document.getElementById('dash-execs').innerText = s.numChildren();
+        });
+        database.ref('requests').on('value', (s) => {
+            document.getElementById('dash-reqs').innerText = s.numChildren();
+        });
+        database.ref('reports').on('value', (s) => {
+            document.getElementById('dash-reports').innerText = s.numChildren();
+        });
+
+        database.ref('requests').on('value', (snapshot) => {
+            const div = document.getElementById('admin-request-list');
+            div.innerHTML = "";
+            if(!snapshot.exists()) {
+                div.innerHTML = `<p class="text-[11px] text-gray-600 font-bold uppercase text-center py-4">Tidak ada request masuk</p>`;
+                return;
+            }
+            snapshot.forEach(child => {
+                const req = child.val();
+                div.innerHTML += `
+                    <div class="bg-[#06070e] p-2.5 rounded-xl border border-white/5 flex flex-col gap-1 text-[11px]">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-amber-400 uppercase">🎮 ${req.gameName}</span>
+                            <button onclick="database.ref('requests').child('${child.key}').remove()" class="text-[9px] font-black text-gray-400 hover:text-white bg-white/5 px-2 py-0.5 rounded">Selesai</button>
+                        </div>
+                        <p class="text-gray-400 font-medium">${req.note || 'Tanpa catatan khusus.'}</p>
+                    </div>
+                `;
+            });
+        });
+
+        database.ref('reports').on('value', (snapshot) => {
+            const div = document.getElementById('admin-report-list');
+            div.innerHTML = "";
+            if(!snapshot.exists()) {
+                div.innerHTML = `<p class="text-[11px] text-gray-600 font-bold uppercase text-center py-4">Sistem aman, tidak ada laporan</p>`;
+                return;
+            }
+            snapshot.forEach(child => {
+                const rep = child.val();
+                div.innerHTML += `
+                    <div class="bg-[#06070e] p-2.5 rounded-xl border border-red-500/10 flex justify-between items-center text-[11px]">
+                        <div>
+                            <span class="font-black text-red-400 block">🚨 ${rep.scriptName}</span>
+                            <span class="text-[9px] text-gray-500 font-bold">Key target: ${rep.scriptKey}</span>
+                        </div>
+                        <button onclick="database.ref('reports').child('${child.key}').remove()" class="text-[9px] font-black text-gray-400 bg-white/5 px-2 py-1 rounded hover:bg-white/10">Clear</button>
+                    </div>
+                `;
+            });
+        });
+
+        function addExecutor() {
+            const name = document.getElementById('exec-name').value.trim();
+            const link = document.getElementById('exec-link').value.trim();
+            const status = document.getElementById('exec-status').value;
+            if(!name || !link) return alert("Isi lengkap kolom nama & link!");
+
+            database.ref('executors').push({ name, link, status }).then(() => {
+                alert("Executor Terpublikasi!");
+                document.getElementById('exec-name').value = "";
+                document.getElementById('exec-link').value = "";
+            });
+        }
+
+        database.ref('executors').on('value', (snapshot) => {
+            const div = document.getElementById('admin-exec-list');
+            div.innerHTML = "";
+            snapshot.forEach(child => {
+                div.innerHTML += `
+                    <div class="flex justify-between items-center bg-[#06070e] p-2 rounded-xl border border-white/5 text-[11px]">
+                        <span class="font-bold">📟 ${child.val().name} (${child.val().status})</span>
+                        <button onclick="database.ref('executors').child('${child.key}').remove()" class="text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded-lg">Hapus</button>
+                    </div>
+                `;
+            });
+        });
+
+        database.ref('categories').on('value', (snapshot) => {
+            const listDiv = document.getElementById('admin-category-list');
+            const select = document.getElementById('script-category-select');
+            listDiv.innerHTML = ''; select.innerHTML = '';
+            snapshot.forEach((child) => {
+                listDiv.innerHTML += `
+                    <div class="flex justify-between items-center bg-[#06070e] px-2.5 py-2 rounded-xl border border-white/5 text-[11px] font-bold">
+                        <span>🔹 ${child.val()}</span>
+                        <button onclick="database.ref('categories').child('${child.key}').remove()" class="text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded-md text-[10px]">Hapus</button>
+                    </div>
+                `;
+                select.innerHTML += `<option value="${child.val()}">${child.val()}</option>`;
+            });
+        });
+
+        function addCategory() {
+            const input = document.getElementById('new-category');
+            if(!input.value.trim()) return;
+            database.ref('categories').push(input.value.trim());
+            input.value = '';
+        }
+
+        function publishScript() {
+            const name = document.getElementById('script-name').value.trim();
+            const feature = document.getElementById('sub-features').value.trim();
+            const cat = document.getElementById('script-category-select').value;
+            const code = document.getElementById('lua-code').value.trim();
+            const fileInput = document.getElementById('cover-file');
+            const badges = [];
+
+            document.querySelectorAll('.badge-cb:checked').forEach(cb => badges.push(cb.value));
+            if(!name || !code) return alert("Nama script dan kode Lua wajib diisi!");
+
+            if(fileInput.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    sendScriptToFirebase(name, feature, cat, badges, e.target.result, code);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                sendScriptToFirebase(name, feature, cat, badges, '', code);
+            }
+        }
+
+        function sendScriptToFirebase(name, feature, cat, badges, img, code) {
+            database.ref('scripts').push({
+                scriptName: name, subFeatures: feature, gameCategory: cat, badges, coverImage: img, luaCode: code
+            }).then(() => {
+                alert("Script Berhasil Diposting!");
+                document.getElementById('script-name').value = '';
+                document.getElementById('sub-features').value = '';
+                document.getElementById('lua-code').value = '';
+                document.getElementById('cover-file').value = '';
+                document.querySelectorAll('.badge-cb').forEach(cb => cb.checked = false);
+            });
+        }
+
+        document.getElementById('admin-search-script').addEventListener('input', renderAdminScripts);
+
+        function renderAdminScripts() {
+            const listDiv = document.getElementById('admin-script-list');
+            const searchVal = document.getElementById('admin-search-script').value.toLowerCase().trim();
+            listDiv.innerHTML = '';
+
+            Object.keys(allScriptsCache).forEach(key => {
+                const item = allScriptsCache[key];
+                if(searchVal && !item.scriptName.toLowerCase().includes(searchVal) && !item.gameCategory.toLowerCase().includes(searchVal)) return;
+
+                listDiv.innerHTML += `
+                    <div class="bg-[#06070e] p-3 rounded-xl border border-white/5 flex flex-col gap-2 text-[11px]">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-black text-white text-xs">${item.scriptName}</p>
+                                <p class="text-[10px] text-purple-400 font-bold">${item.gameCategory} • <span class="text-gray-500">${item.subFeatures || 'No desc'}</span></p>
+                            </div>
+                            <button onclick="database.ref('scripts').child('${key}').remove()" class="bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white font-black px-2.5 py-1.5 rounded-lg text-[10px] uppercase transition-colors">Hapus</button>
+                        </div>
+                        <div class="bg-black/30 p-1.5 rounded border border-white/5 max-h-16 overflow-y-auto">
+                            <code class="text-[9px] font-mono text-green-500/80 break-all">${item.luaCode}</code>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
